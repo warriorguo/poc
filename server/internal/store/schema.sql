@@ -61,3 +61,19 @@ CREATE TABLE IF NOT EXISTS activities (
 -- browser adapter used.
 CREATE INDEX IF NOT EXISTS plans_user_date_idx ON plans (user_id, date);
 CREATE INDEX IF NOT EXISTS activities_user_date_idx ON activities (user_id, date);
+
+-- Personal API tokens, so an agent can act for a user without holding the
+-- password. The secret is stored as a SHA-256 hash: a 256-bit random token is
+-- not guessable, so a slow KDF would buy nothing and cost latency per request.
+CREATE TABLE IF NOT EXISTS api_tokens (
+    id           uuid PRIMARY KEY,
+    user_id      uuid NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    name         text NOT NULL,
+    token_hash   text NOT NULL UNIQUE,
+    prefix       text NOT NULL,
+    created_at   timestamptz NOT NULL DEFAULT now(),
+    last_used_at timestamptz,
+    expires_at   timestamptz
+);
+
+CREATE INDEX IF NOT EXISTS api_tokens_user_idx ON api_tokens (user_id);

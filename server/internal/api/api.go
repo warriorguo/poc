@@ -77,7 +77,15 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/auth/logout", s.handleLogout)
 	mux.HandleFunc("GET /api/auth/me", s.handleMe)
 
+	// Token management is session-only: see requireSession.
+	mux.Handle("POST /api/tokens", s.requireSession(s.handleCreateToken))
+	mux.Handle("GET /api/tokens", s.requireSession(s.handleListTokens))
+	mux.Handle("DELETE /api/tokens/{id}", s.requireSession(s.handleDeleteToken))
+
 	mux.Handle("GET /api/projects", s.requireUser(s.handleListProjects))
+	mux.Handle("POST /api/projects", s.requireUser(s.handleCreateProject))
+	mux.Handle("PATCH /api/projects/{id}", s.requireUser(s.handleUpdateProject))
+	mux.Handle("DELETE /api/projects/{id}", s.requireUser(s.handleDeleteProject))
 	mux.Handle("GET /api/months/{month}", s.requireUser(s.handleMonthOverview))
 	mux.Handle("POST /api/activities", s.requireUser(s.handleCreateActivity))
 	mux.Handle("POST /api/plans", s.requireUser(s.handleCreatePlan))

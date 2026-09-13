@@ -49,6 +49,8 @@ type client struct {
 	t       *testing.T
 	handler http.Handler
 	cookie  *http.Cookie
+	// bearer, when set, is sent instead of the cookie: an agent's credential.
+	bearer string
 }
 
 func (c *client) do(method, path string, body any) *httptest.ResponseRecorder {
@@ -67,7 +69,9 @@ func (c *client) do(method, path string, body any) *httptest.ResponseRecorder {
 	if body != nil {
 		request.Header.Set("Content-Type", "application/json")
 	}
-	if c.cookie != nil {
+	if c.bearer != "" {
+		request.Header.Set("Authorization", "Bearer "+c.bearer)
+	} else if c.cookie != nil {
 		request.AddCookie(c.cookie)
 	}
 

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/mail"
+	"strings"
 	"time"
 
 	"github.com/warriorguo/poc/server/internal/auth"
@@ -157,7 +158,8 @@ func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
 	s.writeJSON(w, http.StatusOK, accountResponse{Email: user.Email})
 }
 
-func (s *Server) currentUser(r *http.Request) (store.User, bool) {
+// userFromCookie resolves a browser session only.
+func (s *Server) userFromCookie(r *http.Request) (store.User, bool) {
 	cookie, err := r.Cookie(auth.SessionCookie)
 	if err != nil || cookie.Value == "" {
 		return store.User{}, false
@@ -169,13 +171,40 @@ func (s *Server) currentUser(r *http.Request) (store.User, bool) {
 	return user, true
 }
 
+// bearerToken extracts a token from the Authorization header.
+func bearerToken(r *http.Request) string {
+	header := r.Header.Get("Authorization")
+	if len(header) < 7 || !strings.EqualFold(header[:7], "bearer ") {
+		return ""
+	}
+	return strings.TrimSpace(header[7:])
+}
+
+// currentUser accepts either a personal API token or a browser session. The
+// token is tried first so an agent's explicit credential always wins over a
+// cookie that a browser may have attached incidentally.
+func (s *Server) currentUser(r *http.Request) (store.User, bool) {
+	if secret := bearerToken(r); secret != "" {
+		user, err := s.store.UserByAPIToken(r.Context(), auth.HashAPIToken(secret))
+		if err != nil {
+			return store.User{}, false
+		}
+		return user, true
+	}
+	return s.userFromCookie(r)
+}
+
 // requireUser rejects anonymous callers before the handler runs, so no data
 // handler can forget the check.
 func (s *Server) requireUser(next func(http.ResponseWriter, *http.Request, store.User)) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user, ok := s.currentUser(r)
 		if !ok {
-			s.clearSessionCookie(w)
+			// Only clear the cookie for a cookie-based caller: an agent sending
+			// a bad bearer token has no session to invalidate.
+			if bearerToken(r) == "" {
+				s.clearSessionCookie(w)
+			}
 			s.writeError(w, http.StatusUnauthorized, codeUnauthenticated, "Sign in to continue.")
 			return
 		}

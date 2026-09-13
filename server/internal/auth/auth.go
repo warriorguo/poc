@@ -3,6 +3,7 @@ package auth
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
@@ -56,6 +57,29 @@ func ValidatePassword(password string) error {
 		return fmt.Errorf("%w: password cannot be blank", ErrWeakPassword)
 	}
 	return nil
+}
+
+// TokenPrefix marks a Tempo personal access token, so a leaked string is
+// recognisable in logs and secret scanners.
+const TokenPrefix = "tempo_"
+
+// NewAPIToken returns the secret to show the user once, and the SHA-256 hash to
+// store. The token is 256 bits of randomness, so a fast hash is sufficient:
+// there is nothing to brute-force.
+func NewAPIToken() (secret string, hash string, displayPrefix string, err error) {
+	raw := make([]byte, 32)
+	if _, err = rand.Read(raw); err != nil {
+		return "", "", "", err
+	}
+	secret = TokenPrefix + base64.RawURLEncoding.EncodeToString(raw)
+	hash = HashAPIToken(secret)
+	displayPrefix = secret[:len(TokenPrefix)+6]
+	return secret, hash, displayPrefix, nil
+}
+
+func HashAPIToken(secret string) string {
+	sum := sha256.Sum256([]byte(secret))
+	return hex.EncodeToString(sum[:])
 }
 
 // NewSessionToken returns 256 bits of randomness, URL-safe.
