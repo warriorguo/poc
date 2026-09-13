@@ -123,6 +123,9 @@ export function App({ api, account, onSignOut, tokenApi }: AppProps) {
         visibleProjectIds={visibleProjectIds}
         onToggle={toggleProject}
         onShowAll={() => setVisibleProjectIds(new Set(overview?.projects.map((project) => project.id) ?? []))}
+        account={account}
+        onManageTokens={() => setShowTokens(true)}
+        onSignOut={onSignOut}
       />
 
       <main className="main-content">
@@ -145,13 +148,6 @@ export function App({ api, account, onSignOut, tokenApi }: AppProps) {
             <button type="button" className="primary-button" onClick={() => setShowLogDialog(true)} disabled={!overview}>
               <Icon name="plus" /> Log time
             </button>
-            <div className="account-menu">
-              <span className="account-email" title={account.email}>{account.email}</span>
-              <div className="account-actions">
-                <button type="button" className="text-button" onClick={() => setShowTokens(true)}>API tokens</button>
-                <button type="button" className="text-button" onClick={onSignOut}>Sign out</button>
-              </div>
-            </div>
           </div>
         </header>
 

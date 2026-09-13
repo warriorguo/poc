@@ -1,3 +1,4 @@
+import type { Account } from '../api/auth-api'
 import type { Project } from '../types/tracker'
 import { Icon } from './Icon'
 
@@ -6,9 +7,20 @@ interface ProjectFilterProps {
   visibleProjectIds: Set<string>
   onToggle: (projectId: string) => void
   onShowAll: () => void
+  account: Account
+  onManageTokens: () => void
+  onSignOut: () => void
 }
 
-export function ProjectFilter({ projects, visibleProjectIds, onToggle, onShowAll }: ProjectFilterProps) {
+export function ProjectFilter({
+  projects,
+  visibleProjectIds,
+  onToggle,
+  onShowAll,
+  account,
+  onManageTokens,
+  onSignOut,
+}: ProjectFilterProps) {
   // Compared by membership, not size: the visible set can still hold ids from
   // a project that has since been archived.
   const allVisible = projects.length > 0 && projects.every((project) => visibleProjectIds.has(project.id))
@@ -59,7 +71,16 @@ export function ProjectFilter({ projects, visibleProjectIds, onToggle, onShowAll
         <div className="legend-row"><i className="legend-chip deep" /> Deep session</div>
       </div>
 
-      <p className="sidebar-note">A quiet record of intention and attention.</p>
+      {/* The account controls live here rather than in the topbar: the day
+          inspector is fixed to the top-right and covered them there, leaving
+          them unclickable whenever it was open. */}
+      <div className="account-menu">
+        <span className="account-email" title={account.email}>{account.email}</span>
+        <div className="account-actions">
+          <button type="button" className="text-button" onClick={onManageTokens}>API tokens</button>
+          <button type="button" className="text-button" onClick={onSignOut}>Sign out</button>
+        </div>
+      </div>
     </aside>
   )
 }

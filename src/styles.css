@@ -102,7 +102,9 @@ h1 { margin: 0; font: 500 35px/1 "Bodoni 72", Didot, serif; letter-spacing: -0.0
 .month-summary span { display: block; margin-top: 3px; color: var(--muted); font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; }
 .primary-button { min-height: 40px; display: inline-flex; justify-content: center; align-items: center; gap: 8px; padding: 0 17px; border: 1px solid #22241f; border-radius: 3px; background: #22241f; color: #fffdf8; cursor: pointer; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; box-shadow: 3px 3px 0 rgba(228, 87, 61, 0.55); transition: transform 160ms ease, box-shadow 160ms ease; }
 .primary-button:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 rgba(228, 87, 61, 0.55); }
-.primary-button:disabled { opacity: 0.45; cursor: wait; }
+/* not-allowed, not wait: a disabled button here means the action is
+   unavailable, and `wait` reads as "already working". */
+.primary-button:disabled { opacity: 0.45; cursor: not-allowed; }
 .primary-button svg { width: 16px; height: 16px; }
 
 .calendar-shell { margin-top: 25px; border-top: 1px solid var(--ink); border-left: 1px solid var(--rule); background: rgba(255, 255, 255, 0.18); box-shadow: 0 22px 55px rgba(51, 45, 33, 0.07); }
@@ -138,7 +140,8 @@ h1 { margin: 0; font: 500 35px/1 "Bodoni 72", Didot, serif; letter-spacing: -0.0
 .auth-switch { display: block; width: 100%; margin-top: 14px; text-align: center; }
 .auth-banner { margin: 18px auto 0; max-width: 390px; }
 .account-menu { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; padding-left: 18px; border-left: 1px solid var(--rule); }
-.account-actions { display: flex; gap: 12px; }
+.account-menu { margin-top: 22px; padding-top: 16px; border-top: 1px solid rgba(248, 245, 237, 0.13); }
+.account-actions { display: flex; gap: 14px; margin-top: 8px; }
 .dialog-wide { width: min(520px, calc(100vw - 36px)); }
 .token-lede { margin: 0 0 18px; color: var(--muted); font-size: 13px; }
 .token-reveal { margin-bottom: 16px; padding: 12px 13px; border: 1px solid var(--strong-rule); background: rgba(188, 139, 25, 0.09); }
@@ -151,7 +154,7 @@ h1 { margin: 0; font: 500 35px/1 "Bodoni 72", Didot, serif; letter-spacing: -0.0
 .token-row strong { display: block; font-size: 13px; }
 .token-row span { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
 .token-empty { margin: 0; padding: 14px 12px; background: var(--paper); color: var(--muted); font-size: 13px; }
-.account-email { max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 12px; }
+.account-email { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: rgba(248, 245, 237, 0.55); font-size: 11px; }
 .form-error { margin: 0 0 4px; padding: 9px 11px; border: 1px solid rgba(181, 47, 47, 0.4); background: rgba(181, 47, 47, 0.08); color: #762c24; font-size: 13px; }
 .heat-overflow { display: block; padding: 1px 4px; color: var(--muted); font-size: 10px; letter-spacing: 0.04em; text-align: left; }
 .inspector-hidden-note { margin: 14px 0 0; color: var(--muted); font-size: 12px; }

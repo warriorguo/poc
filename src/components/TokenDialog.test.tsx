@@ -51,13 +51,20 @@ describe('TokenDialog', () => {
     expect(within(reveal).getByText(/not shown again/i)).toBeTruthy()
   })
 
-  it('will not submit an empty name', async () => {
+  // Regression: the button used to be disabled on an empty name, which read as
+  // broken rather than incomplete. It now stays clickable and says what to do.
+  it('explains an empty name rather than sitting there disabled', async () => {
     const create = vi.fn()
     const { user } = renderDialog(tokenApiWith({ create }))
     await screen.findByText('claude')
 
-    expect(screen.getByRole('button', { name: /create/i })).toHaveProperty('disabled', true)
-    await user.click(screen.getByRole('button', { name: /create/i }))
+    const button = screen.getByRole('button', { name: /create/i })
+    expect(button).toHaveProperty('disabled', false)
+
+    await user.click(button)
+
+    expect(await screen.findByRole('alert')).toHaveProperty(
+      'textContent', 'Give the token a name first, so you can tell your tokens apart later.')
     expect(create).not.toHaveBeenCalled()
   })
 

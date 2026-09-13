@@ -49,7 +49,14 @@ export function TokenDialog({ tokenApi, onClose }: TokenDialogProps) {
 
   async function handleCreate(event: FormEvent) {
     event.preventDefault()
-    if (isWorking || !name.trim()) return
+    if (isWorking) return
+
+    // The button stays enabled on an empty name and explains the problem on
+    // submit. Disabling it made it look broken rather than incomplete.
+    if (!name.trim()) {
+      setError('Give the token a name first, so you can tell your tokens apart later.')
+      return
+    }
 
     setError(null)
     setIsWorking(true)
@@ -109,8 +116,8 @@ export function TokenDialog({ tokenApi, onClose }: TokenDialogProps) {
               onChange={(event) => setName(event.target.value)}
             />
           </label>
-          <button className="primary-button" type="submit" disabled={isWorking || !name.trim()}>
-            <Icon name="plus" /> Create
+          <button className="primary-button" type="submit" disabled={isWorking}>
+            <Icon name="plus" /> {isWorking ? 'Working…' : 'Create'}
           </button>
         </form>
 
