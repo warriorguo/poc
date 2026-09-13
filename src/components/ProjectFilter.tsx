@@ -10,6 +10,10 @@ interface ProjectFilterProps {
   account: Account
   onManageTokens: () => void
   onSignOut: () => void
+  runningProjectId: string | null
+  isTimerBusy: boolean
+  onStartTimer: (projectId: string) => void
+  onStopTimer: () => void
 }
 
 export function ProjectFilter({
@@ -20,6 +24,10 @@ export function ProjectFilter({
   account,
   onManageTokens,
   onSignOut,
+  runningProjectId,
+  isTimerBusy,
+  onStartTimer,
+  onStopTimer,
 }: ProjectFilterProps) {
   // Compared by membership, not size: the visible set can still hold ids from
   // a project that has since been archived.
@@ -45,20 +53,35 @@ export function ProjectFilter({
         <div className="project-list">
           {projects.map((project) => {
             const isVisible = visibleProjectIds.has(project.id)
+            const isRunning = runningProjectId === project.id
+            const blockedByOther = runningProjectId !== null && !isRunning
             return (
-              <button
-                key={project.id}
-                type="button"
-                className={`project-filter ${isVisible ? 'is-active' : ''}`}
-                onClick={() => onToggle(project.id)}
-                aria-pressed={isVisible}
-              >
-                <span className="project-swatch" style={{ '--project-color': project.color } as React.CSSProperties}>
-                  {isVisible && <Icon name="check" />}
-                </span>
-                <span>{project.name}</span>
-                <span className="project-monogram">{project.icon}</span>
-              </button>
+              // A row, not a single button: the timer control cannot be nested
+              // inside the filter button.
+              <div className={`project-row ${isRunning ? 'is-running' : ''}`} key={project.id}>
+                <button
+                  type="button"
+                  className={`project-filter ${isVisible ? 'is-active' : ''}`}
+                  onClick={() => onToggle(project.id)}
+                  aria-pressed={isVisible}
+                >
+                  <span className="project-swatch" style={{ '--project-color': project.color } as React.CSSProperties}>
+                    {isVisible && <Icon name="check" />}
+                  </span>
+                  <span>{project.name}</span>
+                  <span className="project-monogram">{project.icon}</span>
+                </button>
+                <button
+                  type="button"
+                  className={`timer-button ${isRunning ? 'is-running' : ''}`}
+                  onClick={() => (isRunning ? onStopTimer() : onStartTimer(project.id))}
+                  disabled={isTimerBusy || blockedByOther}
+                  title={blockedByOther ? 'Another timer is running. Stop it first.' : undefined}
+                  aria-label={isRunning ? `Stop the timer for ${project.name}` : `Start a timer for ${project.name}`}
+                >
+                  <Icon name={isRunning ? 'stop' : 'play'} />
+                </button>
+              </div>
             )
           })}
         </div>

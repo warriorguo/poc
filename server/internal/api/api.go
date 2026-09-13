@@ -45,7 +45,10 @@ type errorBody struct {
 func (s *Server) writeJSON(w http.ResponseWriter, status int, payload any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
-	if payload == nil {
+	// Only 204 has no body. A nil payload on any other status is a meaningful
+	// JSON `null` — "no timer is running", say — and writing nothing there
+	// would leave an empty body under a JSON content type.
+	if payload == nil && status == http.StatusNoContent {
 		return
 	}
 	if err := json.NewEncoder(w).Encode(payload); err != nil {
@@ -89,6 +92,11 @@ func (s *Server) Routes() http.Handler {
 	mux.Handle("GET /api/months/{month}", s.requireUser(s.handleMonthOverview))
 	mux.Handle("POST /api/activities", s.requireUser(s.handleCreateActivity))
 	mux.Handle("POST /api/plans", s.requireUser(s.handleCreatePlan))
+
+	mux.Handle("GET /api/timer", s.requireUser(s.handleGetTimer))
+	mux.Handle("POST /api/timer/start", s.requireUser(s.handleStartTimer))
+	mux.Handle("POST /api/timer/stop", s.requireUser(s.handleStopTimer))
+	mux.Handle("DELETE /api/timer", s.requireUser(s.handleDiscardTimer))
 
 	mux.HandleFunc("GET /api/healthz", s.handleHealth)
 

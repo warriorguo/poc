@@ -7,9 +7,10 @@ import { Icon } from './components/Icon'
 import { LogTimeDialog } from './components/LogTimeDialog'
 import { MonthCalendar } from './components/MonthCalendar'
 import { ProjectFilter } from './components/ProjectFilter'
+import { RunningTimerBar } from './components/RunningTimerBar'
 import { TokenDialog } from './components/TokenDialog'
 import { monthKeyToDate, shiftMonth, toISODate, toMonthKey } from './domain/calendar'
-import type { CreateActivityInput, ISODate, MonthKey, MonthOverview } from './types/tracker'
+import type { CreateActivityInput, ISODate, MonthKey, MonthOverview, RunningTimer } from './types/tracker'
 
 interface AppProps {
   api: TrackerApi
@@ -41,6 +42,9 @@ export function App({ api, account, onSignOut, tokenApi }: AppProps) {
   const [showLogDialog, setShowLogDialog] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [reloadToken, setReloadToken] = useState(0)
+  const [timer, setTimer] = useState<RunningTimer | null>(null)
+  const [isTimerBusy, setIsTimerBusy] = useState(false)
+  const [timerNotice, setTimerNotice] = useState<string | null>(null)
   const monthKey = toMonthKey(monthDate)
 
   // One loader for both the month change and the post-write refresh, so a slow
@@ -75,6 +79,67 @@ export function App({ api, account, onSignOut, tokenApi }: AppProps) {
     // duplicate the request that just set it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [api, monthKey, reloadToken, onSignOut])
+
+  // Loaded from the server, so a timer survives a reload or another device.
+  useEffect(() => {
+    const controller = new AbortController()
+    api.getRunningTimer({ signal: controller.signal })
+      .then((running) => {
+        if (!controller.signal.aborted) setTimer(running)
+      })
+      .catch(() => {
+        // A failed timer read must not block the calendar; the bar simply
+        // stays hidden and the next action reports the real error.
+      })
+    return () => controller.abort()
+  }, [api])
+
+  async function startTimer(projectId: string) {
+    setIsTimerBusy(true)
+    setTimerNotice(null)
+    try {
+      setTimer(await api.startTimer({ projectId, date: toISODate(new Date()) }))
+    } catch (caught: unknown) {
+      setTimerNotice(caught instanceof TrackerApiError ? caught.message : 'The timer could not be started.')
+    } finally {
+      setIsTimerBusy(false)
+    }
+  }
+
+  async function stopTimer() {
+    setIsTimerBusy(true)
+    setTimerNotice(null)
+    try {
+      const stopped = await api.stopTimer()
+      setTimer(null)
+      setReloadToken((token) => token + 1)
+      if (stopped.truncated) {
+        // Say so rather than quietly recording a different number than the
+        // clock showed.
+        setTimerNotice(
+          `That timer ran ${Math.round(stopped.elapsedMinutes / 60)} hours. ` +
+          `A single entry caps at 24 hours, so ${stopped.activity.durationMinutes} minutes were logged.`,
+        )
+      }
+    } catch (caught: unknown) {
+      setTimerNotice(caught instanceof TrackerApiError ? caught.message : 'The timer could not be stopped.')
+    } finally {
+      setIsTimerBusy(false)
+    }
+  }
+
+  async function discardTimer() {
+    setIsTimerBusy(true)
+    setTimerNotice(null)
+    try {
+      await api.discardTimer()
+      setTimer(null)
+    } catch (caught: unknown) {
+      setTimerNotice(caught instanceof TrackerApiError ? caught.message : 'The timer could not be discarded.')
+    } finally {
+      setIsTimerBusy(false)
+    }
+  }
 
   const changeMonth = useCallback((amount: number) => {
     const nextMonth = shiftMonth(monthDate, amount)
@@ -117,7 +182,9 @@ export function App({ api, account, onSignOut, tokenApi }: AppProps) {
   const selectedDay = overview?.days[selectedDate]
 
   return (
-    <div className="app-shell">
+    // has-inspector reserves the strip the fixed inspector sits over, so no
+    // control in the main column can end up underneath it.
+    <div className={`app-shell ${showInspector && overview ? 'has-inspector' : ''}`}>
       <ProjectFilter
         projects={overview?.projects ?? []}
         visibleProjectIds={visibleProjectIds}
@@ -126,6 +193,10 @@ export function App({ api, account, onSignOut, tokenApi }: AppProps) {
         account={account}
         onManageTokens={() => setShowTokens(true)}
         onSignOut={onSignOut}
+        runningProjectId={timer?.projectId ?? null}
+        isTimerBusy={isTimerBusy}
+        onStartTimer={startTimer}
+        onStopTimer={stopTimer}
       />
 
       <main className="main-content">
@@ -151,6 +222,16 @@ export function App({ api, account, onSignOut, tokenApi }: AppProps) {
           </div>
         </header>
 
+        {timer && overview && (
+          <RunningTimerBar
+            timer={timer}
+            projects={overview.projects}
+            isBusy={isTimerBusy}
+            onStop={stopTimer}
+            onDiscard={discardTimer}
+          />
+        )}
+        {timerNotice && <div className="warning-banner" role="alert">{timerNotice}</div>}
         {error && (
           <div className="error-banner" role="alert">
             {error}

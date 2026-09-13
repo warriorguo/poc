@@ -107,6 +107,91 @@ describe('App', () => {
     }
   })
 
+  it('starts a timer from a project and shows it running', async () => {
+    const { user } = renderApp(emptyApi())
+    await screen.findByLabelText('Monthly activity calendar')
+
+    await user.click(screen.getByRole('button', { name: /start a timer for ozx/i }))
+
+    expect(await screen.findByRole('status')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /stop the timer for ozx/i })).toBeTruthy()
+  })
+
+  // Only one timer can run, so every other project's control must say why.
+  it('blocks starting a second timer while one runs', async () => {
+    const { user } = renderApp(emptyApi())
+    await screen.findByLabelText('Monthly activity calendar')
+    await user.click(screen.getByRole('button', { name: /start a timer for ozx/i }))
+    await screen.findByRole('status')
+
+    const other = screen.getByRole('button', { name: /start a timer for reading/i })
+    expect(other).toHaveProperty('disabled', true)
+    expect(other.getAttribute('title')).toContain('Another timer is running')
+  })
+
+  it('stops a timer and folds the time into the month', async () => {
+    const api = emptyApi()
+    const { user } = renderApp(api)
+    await screen.findByLabelText('Monthly activity calendar')
+
+    await user.click(screen.getByRole('button', { name: /start a timer for ozx/i }))
+    await screen.findByRole('status')
+    await user.click(screen.getByRole('button', { name: /^stop$/i }))
+
+    await waitFor(() => expect(screen.queryByRole('status')).toBeNull())
+    const summary = screen.getByLabelText('Monthly summary')
+    // A sub-minute timer still records one minute rather than nothing.
+    await waitFor(() => expect(within(summary).getByText('1')).toBeTruthy())
+  })
+
+  it('discards a timer without recording anything', async () => {
+    const api = emptyApi()
+    const createActivity = vi.spyOn(api, 'createActivity')
+    const { user } = renderApp(api)
+    await screen.findByLabelText('Monthly activity calendar')
+
+    await user.click(screen.getByRole('button', { name: /start a timer for ozx/i }))
+    await screen.findByRole('status')
+    await user.click(screen.getByRole('button', { name: /discard/i }))
+
+    await waitFor(() => expect(screen.queryByRole('status')).toBeNull())
+    expect(createActivity).not.toHaveBeenCalled()
+    const summary = screen.getByLabelText('Monthly summary')
+    expect(within(summary).getByText('0h')).toBeTruthy()
+  })
+
+  it('restores a timer that was already running on the server', async () => {
+    const api = emptyApi({
+      getRunningTimer: vi.fn().mockResolvedValue({
+        projectId: 'ozx', date: TODAY, startedAt: new Date(Date.now() - 90_000).toISOString(),
+      }),
+    })
+    renderApp(api)
+
+    // A timer survives a reload because it lives on the server, not the tab.
+    expect(await screen.findByRole('status')).toBeTruthy()
+    expect(await screen.findByText('1:30')).toBeTruthy()
+  })
+
+  it('explains a capped timer instead of silently logging a different number', async () => {
+    const api = emptyApi({
+      getRunningTimer: vi.fn().mockResolvedValue({ projectId: 'ozx', date: TODAY, startedAt: new Date().toISOString() }),
+      stopTimer: vi.fn().mockResolvedValue({
+        activity: { id: 'a1', projectId: 'ozx', date: TODAY, durationMinutes: 1440, source: 'timer' },
+        elapsedMinutes: 1560,
+        truncated: true,
+      }),
+    })
+    const { user } = renderApp(api)
+    await screen.findByRole('status')
+
+    await user.click(screen.getByRole('button', { name: /^stop$/i }))
+
+    const notice = await screen.findByRole('alert')
+    expect(notice.textContent).toContain('caps at 24 hours')
+    expect(notice.textContent).toContain('1440 minutes')
+  })
+
   it('keeps an empty project filter when the month changes', async () => {
     const { user } = renderApp(emptyApi())
     await screen.findByLabelText('Monthly activity calendar')

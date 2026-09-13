@@ -54,6 +54,21 @@ export interface MonthOverview {
   }
 }
 
+export interface RunningTimer {
+  projectId: string
+  date: ISODate
+  /** ISO instant the timer started; elapsed time is derived from it. */
+  startedAt: string
+  note?: string
+}
+
+export interface StoppedTimer {
+  activity: Activity
+  /** Real elapsed minutes, which may exceed the activity's capped duration. */
+  elapsedMinutes: number
+  truncated: boolean
+}
+
 export interface CreateActivityInput {
   projectId: string
   date: ISODate

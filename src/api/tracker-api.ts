@@ -1,11 +1,14 @@
 import type {
   Activity,
+  ISODate,
   CreateActivityInput,
   CreatePlanInput,
   MonthKey,
   MonthOverview,
   Plan,
   Project,
+  RunningTimer,
+  StoppedTimer,
 } from '../types/tracker'
 
 export interface RequestOptions {
@@ -21,6 +24,12 @@ export interface TrackerApi {
   getMonthOverview(month: MonthKey, options?: RequestOptions): Promise<MonthOverview>
   createActivity(input: CreateActivityInput, options?: MutationOptions): Promise<Activity>
   createPlan(input: CreatePlanInput, options?: MutationOptions): Promise<Plan>
+
+  /** Resolves to null when no timer is running; that is a normal state. */
+  getRunningTimer(options?: RequestOptions): Promise<RunningTimer | null>
+  startTimer(input: { projectId: string; date: ISODate; note?: string }, options?: MutationOptions): Promise<RunningTimer>
+  stopTimer(input?: { note?: string }, options?: MutationOptions): Promise<StoppedTimer>
+  discardTimer(options?: MutationOptions): Promise<void>
 }
 
 export type TrackerApiErrorCode =

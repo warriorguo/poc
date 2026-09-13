@@ -4,8 +4,11 @@ import type {
   CreatePlanInput,
   MonthKey,
   MonthOverview,
+  ISODate,
   Plan,
   Project,
+  RunningTimer,
+  StoppedTimer,
 } from '../types/tracker'
 import { requestJson } from './http'
 import type { RequestOptions, TrackerApi } from './tracker-api'
@@ -32,6 +35,26 @@ export function createHttpTrackerApi(): TrackerApi {
         body: JSON.stringify(input),
         signal: options?.signal,
       })
+    },
+    getRunningTimer(options?: RequestOptions) {
+      return requestJson<RunningTimer | null>('/timer', { signal: options?.signal })
+    },
+    startTimer(input: { projectId: string; date: ISODate; note?: string }, options?: RequestOptions) {
+      return requestJson<RunningTimer>('/timer/start', {
+        method: 'POST',
+        body: JSON.stringify(input),
+        signal: options?.signal,
+      })
+    },
+    stopTimer(input: { note?: string } = {}, options?: RequestOptions) {
+      return requestJson<StoppedTimer>('/timer/stop', {
+        method: 'POST',
+        body: JSON.stringify(input),
+        signal: options?.signal,
+      })
+    },
+    discardTimer(options?: RequestOptions) {
+      return requestJson<void>('/timer', { method: 'DELETE', signal: options?.signal })
     },
   }
 }

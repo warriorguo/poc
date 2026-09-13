@@ -77,3 +77,16 @@ CREATE TABLE IF NOT EXISTS api_tokens (
 );
 
 CREATE INDEX IF NOT EXISTS api_tokens_user_idx ON api_tokens (user_id);
+
+-- At most one running timer per user: user_id is the primary key, so the
+-- invariant is enforced by the database rather than by application convention.
+-- `date` is the user's LOCAL date at the moment they pressed start, sent by the
+-- client, so a timer running across midnight belongs to the day it began.
+CREATE TABLE IF NOT EXISTS running_timers (
+    user_id    uuid PRIMARY KEY REFERENCES users (id) ON DELETE CASCADE,
+    project_id text NOT NULL,
+    date       date NOT NULL,
+    started_at timestamptz NOT NULL DEFAULT now(),
+    note       text,
+    FOREIGN KEY (user_id, project_id) REFERENCES projects (user_id, id) ON DELETE CASCADE
+);

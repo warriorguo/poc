@@ -54,6 +54,18 @@ server.tool('log_time', 'Record time actually worked on a project. Defaults to t
 server.tool('plan_time', 'Record time intended for a project on a date, without claiming it was worked.',
   schemas.planTime, wrap(handlers.plan_time))
 
+server.tool('timer_status', 'Report whether a timer is running, for which project, and for how long.',
+  schemas.timerStatus, wrap(handlers.timer_status))
+
+server.tool('start_timer', 'Start timing work on a project now. Only one timer can run at a time.',
+  schemas.startTimer, wrap(handlers.start_timer))
+
+server.tool('stop_timer', 'Stop the running timer and log the elapsed time as an activity.',
+  schemas.stopTimer, wrap(handlers.stop_timer))
+
+server.tool('discard_timer', 'Cancel the running timer without logging anything.',
+  schemas.discardTimer, wrap(handlers.discard_timer))
+
 server.tool('month_overview', 'Summarise planned and actual time for a month.',
   schemas.monthOverview, wrap(handlers.month_overview))
 

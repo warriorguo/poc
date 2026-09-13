@@ -6,11 +6,13 @@ import type {
   CreatePlanInput,
   MonthKey,
   MonthOverview,
+  ISODate,
   Plan,
   Project,
+  RunningTimer,
 } from '../types/tracker'
 import { DEFAULT_PROJECTS, DEMO_ACTIVITIES, DEMO_PLANS } from './seed-data'
-import { type RequestOptions, type TrackerApi } from './tracker-api'
+import { TrackerApiError, type RequestOptions, type TrackerApi } from './tracker-api'
 import { assertValidEntry } from './validation'
 
 export interface MockTrackerApiOptions {
@@ -49,6 +51,7 @@ export function createMockTrackerApi(options: MockTrackerApiOptions = {}): Track
   const plans = structuredClone(options.plans ?? DEMO_PLANS)
   const activities = structuredClone(options.activities ?? DEMO_ACTIVITIES)
   const latencyMs = options.latencyMs ?? 80
+  let runningTimer: RunningTimer | null = null
 
   function buildOverview(month: MonthKey): MonthOverview {
     const monthPlans = plans.filter((plan) => plan.date.startsWith(month))
@@ -85,6 +88,45 @@ export function createMockTrackerApi(options: MockTrackerApiOptions = {}): Track
       const plan: Plan = { ...input, id: createId() }
       plans.push(plan)
       return structuredClone(plan)
+    },
+
+    async getRunningTimer() {
+      return runningTimer ? structuredClone(runningTimer) : null
+    },
+
+    async startTimer(input: { projectId: string; date: ISODate; note?: string }) {
+      if (runningTimer) {
+        throw new TrackerApiError('A timer is already running. Stop it before starting another.', 'CONFLICT')
+      }
+      const exists = projects.some((project) => project.id === input.projectId && !project.isArchived)
+      if (!exists) throw new TrackerApiError('Project does not exist or is archived.', 'NOT_FOUND')
+
+      runningTimer = { ...input, startedAt: new Date().toISOString() }
+      return structuredClone(runningTimer)
+    },
+
+    async stopTimer(input: { note?: string } = {}) {
+      if (!runningTimer) throw new TrackerApiError('No timer is running.', 'NOT_FOUND')
+
+      const elapsedMinutes = Math.max(1, Math.round(
+        (Date.now() - new Date(runningTimer.startedAt).getTime()) / 60_000))
+      const truncated = elapsedMinutes > 1440
+      const activity: Activity = {
+        id: createId(),
+        projectId: runningTimer.projectId,
+        date: runningTimer.date,
+        durationMinutes: truncated ? 1440 : elapsedMinutes,
+        note: input.note ?? runningTimer.note,
+        source: 'timer',
+      }
+      activities.push(activity)
+      runningTimer = null
+      return { activity: structuredClone(activity), elapsedMinutes, truncated }
+    },
+
+    async discardTimer() {
+      if (!runningTimer) throw new TrackerApiError('No timer is running.', 'NOT_FOUND')
+      runningTimer = null
     },
   }
 }

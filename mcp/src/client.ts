@@ -24,6 +24,19 @@ export interface MonthOverview {
   totals: { plannedMinutes: number; actualMinutes: number; activeDays: number }
 }
 
+export interface RunningTimer {
+  projectId: string
+  date: string
+  startedAt: string
+  note?: string
+}
+
+export interface StoppedTimer {
+  activity: { id: string; projectId: string; date: string; durationMinutes: number; source: string }
+  elapsedMinutes: number
+  truncated: boolean
+}
+
 export class TempoError extends Error {
   constructor(message: string, readonly code: string, readonly status?: number) {
     super(message)
@@ -124,5 +137,21 @@ export class TempoClient {
 
   monthOverview(month: string): Promise<MonthOverview> {
     return this.request<MonthOverview>(`/months/${encodeURIComponent(month)}`)
+  }
+
+  runningTimer(): Promise<RunningTimer | null> {
+    return this.request<RunningTimer | null>('/timer')
+  }
+
+  startTimer(input: { projectId: string; date: string; note?: string }): Promise<RunningTimer> {
+    return this.request<RunningTimer>('/timer/start', { method: 'POST', body: JSON.stringify(input) })
+  }
+
+  stopTimer(input: { note?: string } = {}): Promise<StoppedTimer> {
+    return this.request<StoppedTimer>('/timer/stop', { method: 'POST', body: JSON.stringify(input) })
+  }
+
+  discardTimer(): Promise<void> {
+    return this.request<void>('/timer', { method: 'DELETE' })
   }
 }
