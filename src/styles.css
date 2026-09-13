@@ -57,8 +57,13 @@ select:focus-visible {
 
 .sidebar-section { flex: 1; }
 .section-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; color: rgba(248, 245, 237, 0.54); font-size: 10px; text-transform: uppercase; letter-spacing: 0.17em; }
-.text-button { padding: 0; border: 0; background: none; color: rgba(248, 245, 237, 0.72); cursor: pointer; text-transform: none; letter-spacing: 0; font-size: 11px; }
+/* Inherits its surface's colour: this button appears on the dark sidebar and
+   on light surfaces (the error banner, the topbar, the auth card). A fixed
+   near-white made it invisible on all of the light ones. */
+.text-button { padding: 0; border: 0; background: none; color: inherit; opacity: 0.72; cursor: pointer; text-transform: none; letter-spacing: 0; font-size: 11px; text-decoration: underline; text-underline-offset: 3px; }
+.text-button:hover:not(:disabled) { opacity: 1; }
 .text-button:disabled { opacity: 0; pointer-events: none; }
+.auth-switch { color: var(--ink); }
 .project-list { display: grid; gap: 3px; }
 .project-filter {
   display: grid; grid-template-columns: 20px 1fr auto; align-items: center; gap: 11px;
