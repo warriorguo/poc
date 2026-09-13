@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Account } from './api/auth-api'
+import { createTokenApi, type TokenApi } from './api/token-api'
 import { TrackerApiError, type TrackerApi } from './api/tracker-api'
 import { DayInspector } from './components/DayInspector'
 import { Icon } from './components/Icon'
 import { LogTimeDialog } from './components/LogTimeDialog'
 import { MonthCalendar } from './components/MonthCalendar'
 import { ProjectFilter } from './components/ProjectFilter'
+import { TokenDialog } from './components/TokenDialog'
 import { monthKeyToDate, shiftMonth, toISODate, toMonthKey } from './domain/calendar'
 import type { CreateActivityInput, ISODate, MonthKey, MonthOverview } from './types/tracker'
 
@@ -13,6 +15,8 @@ interface AppProps {
   api: TrackerApi
   account: Account
   onSignOut: () => void
+  /** Injected by tests; production resolves the real client. */
+  tokenApi?: TokenApi
 }
 
 function formatHours(minutes: number): string {
@@ -24,7 +28,9 @@ function isAbortError(error: unknown): boolean {
   return error instanceof DOMException && error.name === 'AbortError'
 }
 
-export function App({ api, account, onSignOut }: AppProps) {
+export function App({ api, account, onSignOut, tokenApi }: AppProps) {
+  const tokens = useMemo(() => tokenApi ?? createTokenApi(), [tokenApi])
+  const [showTokens, setShowTokens] = useState(false)
   const today = useMemo(() => toISODate(new Date()), [])
   const [monthDate, setMonthDate] = useState(() => shiftMonth(new Date(), 0))
   const [overview, setOverview] = useState<MonthOverview | null>(null)
@@ -141,7 +147,10 @@ export function App({ api, account, onSignOut }: AppProps) {
             </button>
             <div className="account-menu">
               <span className="account-email" title={account.email}>{account.email}</span>
-              <button type="button" className="text-button" onClick={onSignOut}>Sign out</button>
+              <div className="account-actions">
+                <button type="button" className="text-button" onClick={() => setShowTokens(true)}>API tokens</button>
+                <button type="button" className="text-button" onClick={onSignOut}>Sign out</button>
+              </div>
             </div>
           </div>
         </header>
@@ -181,6 +190,8 @@ export function App({ api, account, onSignOut }: AppProps) {
           onLogTime={() => setShowLogDialog(true)}
         />
       )}
+
+      {showTokens && <TokenDialog tokenApi={tokens} onClose={() => setShowTokens(false)} />}
 
       {showLogDialog && overview && (
         <LogTimeDialog
