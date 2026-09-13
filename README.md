@@ -70,5 +70,11 @@ API under supervisord in one image. nginx serves the SPA, proxies `/api/`, and
 adds the security headers. `/healthz` is liveness; `/api/healthz` is readiness
 and checks the database.
 
+## Assistant access
+
+Tempo ships an MCP server (`mcp/`) so Claude can create projects and log hours
+conversationally, authenticated with a personal API token rather than your
+password. See [docs/agent-setup.md](docs/agent-setup.md).
+
 See [docs/technical-design.md](docs/technical-design.md) for the domain model,
 API contract, and rendering rules.
