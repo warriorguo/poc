@@ -25,6 +25,7 @@ RUN apk add --no-cache nginx supervisor ca-certificates \
 COPY --from=frontend /app/dist /usr/share/nginx/html
 COPY --from=backend /out/tempo-api /usr/local/bin/tempo-api
 COPY nginx.conf /etc/nginx/http.d/default.conf
+COPY nginx-security-headers.conf /etc/nginx/security-headers.conf
 COPY supervisord.conf /etc/supervisord.conf
 
 EXPOSE 80
