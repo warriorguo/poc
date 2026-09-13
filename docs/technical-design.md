@@ -9,7 +9,11 @@
 
 This document specifies the target product across the rollout phases. **The v0.1 delivery scope is Phase 0:** a working UI with project filtering, month navigation, day inspection, and manual activity logging. Project CRUD, plan CRUD, timers, authentication, and integrations are follow-on phases unless explicitly promoted into scope.
 
-**Amendment, 2026-09-13 — local persistence promoted into v0.1.** Phase 0 originally ran against an in-memory adapter, which discarded every entry on reload. v0.1 now persists to the browser's IndexedDB behind the same `TrackerApi` boundary (`src/api/indexeddb-tracker-api.ts`). This keeps the app serverless and single-device: there is still no account system, and multi-device sync remains a later phase that will supply a second `TrackerApi` implementation rather than change anything above it. When the browser denies IndexedDB, the app falls back to the in-memory adapter and tells the user their entries will not be kept.
+**Amendment, 2026-09-13 — persistence and accounts promoted into v0.1.** Phase 0 originally ran against an in-memory adapter, which discarded every entry on reload. That was first replaced with browser-local IndexedDB, and then, the same day, with a server: v0.1 now stores data in PostgreSQL behind a Go API (`server/`), reached through `src/api/http-tracker-api.ts`. The browser adapter has been removed.
+
+Because the database is shared, accounts moved from a later phase into v0.1: without them a single ingress would expose every user's entries to every visitor. Authentication is email plus a bcrypt-hashed password, with opaque session tokens in an HttpOnly cookie. Every row carries a `user_id` and every query is scoped by it; no endpoint accepts a user id from the client. Registration seeds the new account's default projects, replacing the first-run seeding the browser adapter did in its schema upgrade.
+
+The `TrackerApi` boundary absorbed all three transports without changing shape, which is the property it was introduced for. Multi-device sync now falls out of the server rather than needing a design of its own.
 
 ## 1. Summary
 

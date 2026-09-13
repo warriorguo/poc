@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { createTrackerApi, type TrackerApiHandle } from './api/create-tracker-api'
+import type { Account } from './api/auth-api'
+import { TrackerApiError, type TrackerApi } from './api/tracker-api'
 import { DayInspector } from './components/DayInspector'
 import { Icon } from './components/Icon'
 import { LogTimeDialog } from './components/LogTimeDialog'
@@ -9,8 +10,9 @@ import { monthKeyToDate, shiftMonth, toISODate, toMonthKey } from './domain/cale
 import type { CreateActivityInput, ISODate, MonthKey, MonthOverview } from './types/tracker'
 
 interface AppProps {
-  /** Injected by tests; production builds resolve the adapter themselves. */
-  trackerApi?: TrackerApiHandle
+  api: TrackerApi
+  account: Account
+  onSignOut: () => void
 }
 
 function formatHours(minutes: number): string {
@@ -22,10 +24,7 @@ function isAbortError(error: unknown): boolean {
   return error instanceof DOMException && error.name === 'AbortError'
 }
 
-export function App({ trackerApi }: AppProps = {}) {
-  const handle = useMemo(() => trackerApi ?? createTrackerApi(), [trackerApi])
-  const { api, isPersistent } = handle
-
+export function App({ api, account, onSignOut }: AppProps) {
   const today = useMemo(() => toISODate(new Date()), [])
   const [monthDate, setMonthDate] = useState(() => shiftMonth(new Date(), 0))
   const [overview, setOverview] = useState<MonthOverview | null>(null)
@@ -56,6 +55,12 @@ export function App({ trackerApi }: AppProps = {}) {
       })
       .catch((loadError: unknown) => {
         if (isAbortError(loadError) || controller.signal.aborted) return
+        if (loadError instanceof TrackerApiError && loadError.code === 'UNAUTHENTICATED') {
+          // The cookie expired or was revoked; hand back to the sign-in screen
+          // rather than showing a retry that can never succeed.
+          onSignOut()
+          return
+        }
         setError('The month could not be loaded. Please try again.')
       })
 
@@ -63,7 +68,7 @@ export function App({ trackerApi }: AppProps = {}) {
     // hasInitialisedFilter is read, not tracked: re-running on its change would
     // duplicate the request that just set it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [api, monthKey, reloadToken])
+  }, [api, monthKey, reloadToken, onSignOut])
 
   const changeMonth = useCallback((amount: number) => {
     const nextMonth = shiftMonth(monthDate, amount)
@@ -134,14 +139,13 @@ export function App({ trackerApi }: AppProps = {}) {
             <button type="button" className="primary-button" onClick={() => setShowLogDialog(true)} disabled={!overview}>
               <Icon name="plus" /> Log time
             </button>
+            <div className="account-menu">
+              <span className="account-email" title={account.email}>{account.email}</span>
+              <button type="button" className="text-button" onClick={onSignOut}>Sign out</button>
+            </div>
           </div>
         </header>
 
-        {!isPersistent && (
-          <div className="warning-banner" role="status">
-            This browser is blocking local storage, so entries will be lost when the page reloads.
-          </div>
-        )}
         {error && (
           <div className="error-banner" role="alert">
             {error}

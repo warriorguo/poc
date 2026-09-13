@@ -41,8 +41,8 @@ function waitForMock(latencyMs: number, signal?: AbortSignal): Promise<void> {
 }
 
 /**
- * In-memory adapter. Used by tests and as the fallback when the browser denies
- * IndexedDB; state is per-instance, so tests cannot leak into one another.
+ * In-memory adapter used as the test double for the HTTP client. State is
+ * per-instance, so tests cannot leak into one another.
  */
 export function createMockTrackerApi(options: MockTrackerApiOptions = {}): TrackerApi {
   const projects = structuredClone(options.projects ?? DEFAULT_PROJECTS)

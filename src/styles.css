@@ -123,7 +123,17 @@ h1 { margin: 0; font: 500 35px/1 "Bodoni 72", Didot, serif; letter-spacing: -0.0
 .calendar-footer span { display: flex; align-items: center; gap: 6px; }
 .calendar-footer svg { width: 13px; height: 13px; }
 .error-banner { display: flex; gap: 14px; align-items: center; justify-content: space-between; margin-top: 20px; padding: 12px 14px; border: 1px solid rgba(181, 47, 47, 0.4); background: rgba(181, 47, 47, 0.08); color: #762c24; }
-.warning-banner { margin-top: 20px; padding: 12px 14px; border: 1px solid rgba(188, 139, 25, 0.45); background: rgba(188, 139, 25, 0.1); color: #6b4e08; }
+.auth-shell { display: flex; min-height: 100vh; align-items: center; justify-content: center; padding: 28px 18px; }
+.auth-card { width: min(390px, 100%); padding: 32px 30px 26px; border: 1px solid var(--ink); background: var(--paper); box-shadow: -8px 10px 0 rgba(34, 36, 31, 0.14); }
+.auth-card h1 { margin: 22px 0 8px; font: 500 30px/1.08 "Bodoni 72", Didot, serif; }
+.auth-lede { margin: 0 0 22px; color: var(--muted); font-size: 13px; }
+.auth-card label { display: block; margin-bottom: 15px; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.auth-card input { display: block; width: 100%; margin-top: 6px; padding: 10px 11px; border: 1px solid var(--strong-rule); background: #fff; font-size: 14px; letter-spacing: normal; text-transform: none; color: var(--ink); }
+.auth-hint { margin: -8px 0 14px; color: var(--muted); font-size: 12px; }
+.auth-switch { display: block; width: 100%; margin-top: 14px; text-align: center; }
+.auth-banner { margin: 18px auto 0; max-width: 390px; }
+.account-menu { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; padding-left: 18px; border-left: 1px solid var(--rule); }
+.account-email { max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 12px; }
 .form-error { margin: 0 0 4px; padding: 9px 11px; border: 1px solid rgba(181, 47, 47, 0.4); background: rgba(181, 47, 47, 0.08); color: #762c24; font-size: 13px; }
 .heat-overflow { display: block; padding: 1px 4px; color: var(--muted); font-size: 10px; letter-spacing: 0.04em; text-align: left; }
 .inspector-hidden-note { margin: 14px 0 0; color: var(--muted); font-size: 12px; }

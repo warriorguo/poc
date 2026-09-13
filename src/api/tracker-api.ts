@@ -23,7 +23,13 @@ export interface TrackerApi {
   createPlan(input: CreatePlanInput, options?: MutationOptions): Promise<Plan>
 }
 
-export type TrackerApiErrorCode = 'NOT_FOUND' | 'VALIDATION' | 'NETWORK' | 'STORAGE' | 'UNKNOWN'
+export type TrackerApiErrorCode =
+  | 'NOT_FOUND'
+  | 'VALIDATION'
+  | 'NETWORK'
+  | 'UNAUTHENTICATED'
+  | 'CONFLICT'
+  | 'UNKNOWN'
 
 export class TrackerApiError extends Error {
   constructor(

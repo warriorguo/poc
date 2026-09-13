@@ -6,10 +6,13 @@ import { TrackerApiError, type TrackerApi } from './api/tracker-api'
 import { App } from './App'
 import { activityOn, planOn, TODAY } from './test/factories'
 
-function renderApp(api: TrackerApi, isPersistent = true) {
+const ACCOUNT = { email: 'andrew@example.com' }
+
+function renderApp(api: TrackerApi, onSignOut = vi.fn()) {
   return {
     user: userEvent.setup(),
-    ...render(<App trackerApi={{ api, isPersistent }} />),
+    onSignOut,
+    ...render(<App api={api} account={ACCOUNT} onSignOut={onSignOut} />),
   }
 }
 
@@ -123,7 +126,7 @@ describe('App', () => {
   it('surfaces a load failure with a retry that succeeds', async () => {
     const working = createMockTrackerApi({ latencyMs: 0, plans: [], activities: [] })
     const getMonthOverview = vi.fn()
-      .mockRejectedValueOnce(new TrackerApiError('nope', 'STORAGE'))
+      .mockRejectedValueOnce(new TrackerApiError('nope', 'NETWORK'))
       .mockImplementation(working.getMonthOverview)
     const { user } = renderApp({ ...working, getMonthOverview })
 
@@ -135,17 +138,22 @@ describe('App', () => {
     expect(screen.getByLabelText('Monthly activity calendar')).toBeTruthy()
   })
 
-  it('warns when the browser refuses to persist anything', async () => {
-    renderApp(emptyApi(), false)
-    expect(await screen.findByRole('status')).toHaveProperty(
-      'textContent',
-      'This browser is blocking local storage, so entries will be lost when the page reloads.',
-    )
+  it('hands back to sign-in when the session has expired', async () => {
+    const onSignOut = vi.fn()
+    const working = createMockTrackerApi({ latencyMs: 0, plans: [], activities: [] })
+    const getMonthOverview = vi.fn().mockRejectedValue(new TrackerApiError('Sign in to continue.', 'UNAUTHENTICATED'))
+    renderApp({ ...working, getMonthOverview }, onSignOut)
+
+    // An expired cookie must not surface as a retry that can never succeed.
+    await waitFor(() => expect(onSignOut).toHaveBeenCalled())
+    expect(screen.queryByRole('alert')).toBeNull()
   })
 
-  it('does not warn about persistence when storage works', async () => {
-    renderApp(emptyApi())
-    await screen.findByLabelText('Monthly activity calendar')
-    expect(screen.queryByRole('status')).toBeNull()
+  it('shows the signed-in account and offers a way out', async () => {
+    const { user, onSignOut } = renderApp(emptyApi())
+    expect(await screen.findByText('andrew@example.com')).toBeTruthy()
+
+    await user.click(screen.getByRole('button', { name: /sign out/i }))
+    expect(onSignOut).toHaveBeenCalledTimes(1)
   })
 })

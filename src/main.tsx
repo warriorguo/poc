@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { App } from './App'
+import { AuthGate } from './AuthGate'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import './styles.css'
 
@@ -10,7 +10,7 @@ if (!container) throw new Error('Root element #root is missing from index.html')
 createRoot(container).render(
   <StrictMode>
     <ErrorBoundary>
-      <App />
+      <AuthGate />
     </ErrorBoundary>
   </StrictMode>,
 )
